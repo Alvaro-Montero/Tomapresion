@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "Tomapresion",
+    "slug": "tomapresion",
+    "version": "1.0.0",
+    "android": {
+      "package": "com.alvaro.tomapresion",
+      "googleServicesFile": "./google-services.json"
+    },
+    "plugins": []
+  }
+}

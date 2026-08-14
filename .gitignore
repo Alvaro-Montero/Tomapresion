@@ -1,0 +1,7 @@
+node_modules
+.expo
+.vscode
+.DS_Store
+android/.gradle
+android/app/google-services.json
+eas.json
