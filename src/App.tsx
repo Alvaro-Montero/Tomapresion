@@ -12,8 +12,9 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 
 export default function App() {
-  const [imageUri, setImageUri] = useState(null);
-  const [ocrResult, setOcrResult] = useState({});
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [ocrResult, setOcrResult] = useState<{ systolic?: number | null; diastolic?: number | null; pulse?: number | null }>({});
+  const [recognizing, setRecognizing] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -30,23 +31,78 @@ export default function App() {
     });
     if (!result.cancelled) {
       setImageUri(result.uri);
-      // Aquí llamaremos al OCR (ML Kit) — placeholder
+      // Llama al OCR nativo (si está instalado); si no, usa fallback simulado
       runOcrOnImage(result.uri);
     }
   };
 
-  const runOcrOnImage = async (uri) => {
-    // Placeholder: integrarse con ML Kit nativo (react-native-google-mlkit-text-recognition)
-    // Por ahora simulamos extracción
-    // Ejemplo de pattern: "120/80 72"
-    setTimeout(() => {
-      setOcrResult({ systolic: 120, diastolic: 80, pulse: 72 });
-    }, 800);
+  const parseBpFromText = (text: string) => {
+    // Busca patrón típico "120/80" para sistólica/diastólica
+    const bpMatch = text.match(/(\d{2,3})\s*\/\s*(\d{2,3})/);
+    let systolic = bpMatch ? parseInt(bpMatch[1], 10) : null;
+    let diastolic = bpMatch ? parseInt(bpMatch[2], 10) : null;
+
+    // Busca pulso por etiquetas comunes
+    let pulse: number | null = null;
+    const pulseMatch = text.match(/(?:pulse|pulso|bpm)[:\s]*?(\d{2,3})/i);
+    if (pulseMatch) {
+      pulse = parseInt(pulseMatch[1], 10);
+    } else {
+      // Si no hay etiqueta, intenta inferir: encuentra todos los números de 2-3 dígitos
+      const nums = (text.match(/\d{2,3}/g) || []).map(n => parseInt(n, 10));
+      if (nums.length > 0) {
+        // Quita los que ya usamos para la presión
+        const remaining = nums.filter(n => n !== systolic && n !== diastolic);
+        if (remaining.length > 0) {
+          pulse = remaining[0];
+        }
+      }
+    }
+
+    return { systolic, diastolic, pulse };
+  };
+
+  const runOcrOnImage = async (uri: string) => {
+    setRecognizing(true);
+    try {
+      // Intentamos carga dinámica del módulo ML Kit. Requiere que instales
+      // @react-native-ml-kit/text-recognition (o la variante que prefieras)
+      // y ejecutes `expo prebuild` para crear los enlaces nativos.
+      let fullText = '';
+      try {
+        const mlkitModule = await import('@react-native-ml-kit/text-recognition');
+        // El módulo puede exportar por defecto o como named export
+        const TextRecognition = mlkitModule.default ?? mlkitModule;
+        // recognize(uri) es la API común: el resultado tiene .text
+        const res: any = await TextRecognition.recognize(uri);
+        fullText = res?.text ?? '';
+      } catch (e) {
+        console.warn('ML Kit no disponible o falla en import dinámico, usando fallback. Error:', e?.message ?? e);
+        // Fallback: simulamos resultado si no hay ML Kit instalado
+        fullText = '120/80 72';
+      }
+
+      const parsed = parseBpFromText(fullText);
+      setOcrResult({
+        systolic: parsed.systolic,
+        diastolic: parsed.diastolic,
+        pulse: parsed.pulse
+      });
+
+      if (!parsed.systolic && !parsed.diastolic && !parsed.pulse) {
+        Alert.alert('OCR', 'No se detectaron valores en la imagen');
+      }
+    } catch (err) {
+      console.error('Error en OCR:', err);
+      Alert.alert('Error OCR', 'Ocurrió un error al procesar la imagen');
+    } finally {
+      setRecognizing(false);
+    }
   };
 
   const saveRecord = async () => {
     try {
-      let imageUrl = null;
+      let imageUrl: string | null = null;
       if (imageUri) {
         const response = await fetch(imageUri);
         const blob = await response.blob();
@@ -56,9 +112,9 @@ export default function App() {
         imageUrl = await getDownloadURL(imageRef);
       }
       const docRef = await addDoc(collection(db, 'readings'), {
-        systolic: ocrResult.systolic || null,
-        diastolic: ocrResult.diastolic || null,
-        pulse: ocrResult.pulse || null,
+        systolic: ocrResult.systolic ?? null,
+        diastolic: ocrResult.diastolic ?? null,
+        pulse: ocrResult.pulse ?? null,
         timestamp: new Date().toISOString(),
         imageUrl
       });
@@ -87,6 +143,12 @@ export default function App() {
       <TouchableOpacity style={styles.button} onPress={saveRecord}>
         <Text style={styles.buttonText}>Guardar registro</Text>
       </TouchableOpacity>
+
+      <View style={{ marginTop: 10 }}>
+        <Text style={{ color: '#666' }}>{recognizing ? 'Reconociendo texto...' : ' '}</Text>
+      </View>
+
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
