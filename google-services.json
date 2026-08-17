@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "941319346780",
+    "project_id": "tomapresion",
+    "storage_bucket": "tomapresion.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:941319346780:android:3cc5d9eb32c686dbc9e499",
+        "android_client_info": {
+          "package_name": "com.alvaro.tomapresion"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCkvh5Ol4XE3uwphn9QWQSacoeYX-4DPXY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
