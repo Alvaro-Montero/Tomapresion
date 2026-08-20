@@ -10,13 +10,5 @@
         "buildType": "apk"
       }
     }
-  },
-  "submit": {
-    "production": {
-      "android": {
-        "serviceAccount": "path/to/service-account.json",
-        "track": "internal"
-      }
-    }
   }
 }
