@@ -29,10 +29,12 @@ export default function App() {
     const result = await ImagePicker.launchCameraAsync({
       quality: 0.8
     });
-    if (!result.cancelled) {
-      setImageUri(result.uri);
+    // Updated API: check 'canceled' instead of 'cancelled' and use 'assets' array
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const imageUri = result.assets[0].uri;
+      setImageUri(imageUri);
       // Llama al OCR nativo (si está instalado); si no, usa fallback simulado
-      runOcrOnImage(result.uri);
+      runOcrOnImage(imageUri);
     }
   };
 
@@ -59,7 +61,7 @@ export default function App() {
       }
     }
 
-    return { systolic, diastolic, pulse };
+    return { systolic, dastolic: diastolic, pulse };
   };
 
   const runOcrOnImage = async (uri: string) => {
@@ -85,11 +87,11 @@ export default function App() {
       const parsed = parseBpFromText(fullText);
       setOcrResult({
         systolic: parsed.systolic,
-        diastolic: parsed.diastolic,
+        dastolic: parsed.dastolic,
         pulse: parsed.pulse
       });
 
-      if (!parsed.systolic && !parsed.diastolic && !parsed.pulse) {
+      if (!parsed.systolic && !parsed.dastolic && !parsed.pulse) {
         Alert.alert('OCR', 'No se detectaron valores en la imagen');
       }
     } catch (err) {
@@ -113,7 +115,7 @@ export default function App() {
       }
       const docRef = await addDoc(collection(db, 'readings'), {
         systolic: ocrResult.systolic ?? null,
-        diastolic: ocrResult.diastolic ?? null,
+        dastolic: ocrResult.dastolic ?? null,
         pulse: ocrResult.pulse ?? null,
         timestamp: new Date().toISOString(),
         imageUrl
@@ -136,7 +138,7 @@ export default function App() {
 
       <View style={styles.ocrBox}>
         <Text>Sistólica: {ocrResult.systolic ?? '-'}</Text>
-        <Text>Diastólica: {ocrResult.diastolic ?? '-'}</Text>
+        <Text>Dastólica: {ocrResult.dastolic ?? '-'}</Text>
         <Text>Pulso: {ocrResult.pulse ?? '-'}</Text>
       </View>
 
