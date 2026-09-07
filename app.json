@@ -7,6 +7,9 @@
       "package": "com.alvaro.tomapresion",
       "googleServicesFile": "./google-services.json"
     },
+    "ios": {
+      "supportsTablet": true
+    },
     "plugins": []
   }
 }
